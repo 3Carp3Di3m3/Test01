@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../engine/workout_engine.dart';
 import '../models/timer_config.dart';
@@ -32,15 +33,26 @@ class RunScreen extends StatefulWidget {
   /// Builds the engine so stage 4/5 can attach sounds and services.
   final WorkoutEngine Function(WorkoutSchedule schedule) engineBuilder;
 
-  /// Called whenever engine state should be persisted, and on exit
-  /// (stage 5). Null until then.
+  /// Called on pause/resume (so state can be persisted) and on exit.
   final void Function(WorkoutEngine engine, {required bool ended})? onLifecycle;
+
+  /// Resume an interrupted workout this many seconds in (0 = fresh start).
+  final double initialElapsed;
+
+  /// When restoring a workout that was paused, open the screen paused.
+  final bool startPaused;
+
+  /// Keep the screen on while this screen is open (settings toggle).
+  final bool keepAwake;
 
   const RunScreen({
     super.key,
     required this.config,
     required this.engineBuilder,
     this.onLifecycle,
+    this.initialElapsed = 0,
+    this.startPaused = false,
+    this.keepAwake = true,
   });
 
   @override
@@ -54,11 +66,16 @@ class _RunScreenState extends State<RunScreen> {
   void initState() {
     super.initState();
     _engine = widget.engineBuilder(WorkoutSchedule.fromConfig(widget.config));
-    _engine.start();
+    if (widget.initialElapsed > 0) {
+      _engine.restoreElapsed(widget.initialElapsed);
+    }
+    if (!widget.startPaused) _engine.start();
+    if (widget.keepAwake) WakelockPlus.enable();
   }
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     widget.onLifecycle?.call(_engine, ended: true);
     _engine.dispose();
     super.dispose();
