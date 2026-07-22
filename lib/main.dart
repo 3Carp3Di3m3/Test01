@@ -4,17 +4,31 @@ import 'engine/workout_engine.dart';
 import 'models/timer_config.dart';
 import 'screens/home_screen.dart';
 import 'screens/run_screen.dart';
+import 'services/app_settings.dart';
+import 'services/cue_player.dart';
 import 'services/timer_store.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(FitTimerApp(store: TimerStore()..load()));
+  final settings = AppSettings()..load();
+  runApp(FitTimerApp(
+    store: TimerStore()..load(),
+    settings: settings,
+    cuePlayer: CuePlayer(settings)..init(),
+  ));
 }
 
 class FitTimerApp extends StatelessWidget {
   final TimerStore store;
+  final AppSettings settings;
+  final CuePlayer cuePlayer;
 
-  const FitTimerApp({super.key, required this.store});
+  const FitTimerApp({
+    super.key,
+    required this.store,
+    required this.settings,
+    required this.cuePlayer,
+  });
 
   void _startWorkout(BuildContext context, TimerConfig config) {
     Navigator.push(
@@ -22,7 +36,8 @@ class FitTimerApp extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => RunScreen(
           config: config,
-          engineBuilder: (schedule) => WorkoutEngine(schedule),
+          engineBuilder: (schedule) =>
+              WorkoutEngine(schedule, onCue: cuePlayer.handleCue),
         ),
       ),
     );
