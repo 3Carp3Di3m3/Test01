@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'engine/workout_engine.dart';
 import 'models/timer_config.dart';
 import 'screens/home_screen.dart';
+import 'screens/run_screen.dart';
 import 'services/timer_store.dart';
 
 void main() {
@@ -15,9 +17,14 @@ class FitTimerApp extends StatelessWidget {
   const FitTimerApp({super.key, required this.store});
 
   void _startWorkout(BuildContext context, TimerConfig config) {
-    // Running timer screen arrives in stage 3.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Running "${config.name}" — coming in stage 3')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RunScreen(
+          config: config,
+          engineBuilder: (schedule) => WorkoutEngine(schedule),
+        ),
+      ),
     );
   }
 
