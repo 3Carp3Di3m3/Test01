@@ -14,27 +14,33 @@ guides you through the workout with colors, sounds and vibration.
 lib/
   main.dart                     # App entry: theme, wiring of all services
   models/
-    timer_config.dart           # A saved timer (work/rest/rounds/sets) + presets
+    timer_config.dart           # A saved timer (warm-up/work/rest/cool-down) + presets
     workout_schedule.dart       # Expands a timer into intervals; "what phase at second X"
+    workout_record.dart         # One completed workout, for history
   engine/
     workout_engine.dart         # Wall-clock driven engine: pause/skip/cues
   services/
     timer_store.dart            # Saved timers (shared_preferences, JSON)
-    app_settings.dart           # Sound / vibration / keep-awake toggles
+    history_store.dart          # Completed-workout log + stats
+    app_settings.dart           # Sound / voice / vibration / keep-awake / theme
     cue_player.dart             # Beeps + vibration, ducks music via audio_session
+    voice_coach.dart            # Spoken cues via flutter_tts (ducks music too)
     foreground_service.dart     # Android foreground service + notification
     running_session_store.dart  # Persists a running workout for resume-after-kill
   screens/
     home_screen.dart            # Saved timers, quick start, create new
-    edit_timer_screen.dart      # Steppers, presets, live total duration
-    run_screen.dart             # Full-screen colored timer with huge digits
-    settings_screen.dart        # Toggles
+    edit_timer_screen.dart      # Sectioned steppers, presets, live total duration
+    run_screen.dart             # Colored timer, progress ring, completion summary
+    history_screen.dart         # Workout history + summary stats
+    settings_screen.dart        # Sound/voice/vibration/keep-awake + theme picker
   widgets/
     stepper_row.dart            # +/− control with hold-to-repeat
-  utils/format.dart             # Time formatting helpers
+  utils/format.dart             # Time + relative-date formatting helpers
 test/
   workout_schedule_test.dart    # Duration + phase-lookup unit tests
+  format_test.dart              # Time + relative-date formatting tests
 assets/sounds/                  # Synthesized beep/finish WAV files
+assets/icon/                    # App icon source art
 ```
 
 ### How the timer stays accurate (the important part)

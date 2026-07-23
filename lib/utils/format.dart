@@ -16,3 +16,17 @@ String formatClock(int seconds) {
   if (h > 0) return '$h:${_two(m)}:${_two(s)}';
   return '$m:${_two(s)}';
 }
+
+/// A short, dependency-free relative date: "Today", "Yesterday", "3d ago",
+/// then an absolute "d.M." / "d.M.yy" for anything older.
+String relativeDate(DateTime when, DateTime now) {
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(when.year, when.month, when.day);
+  final diffDays = today.difference(day).inDays;
+  if (diffDays <= 0) return 'Today';
+  if (diffDays == 1) return 'Yesterday';
+  if (diffDays < 7) return '${diffDays}d ago';
+  if (when.year == now.year) return '${when.day}.${when.month}.';
+  final yy = (when.year % 100).toString().padLeft(2, '0');
+  return '${when.day}.${when.month}.$yy';
+}

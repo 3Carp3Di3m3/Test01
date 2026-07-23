@@ -16,11 +16,15 @@ class HomeScreen extends StatelessWidget {
   /// Optional settings action shown in the app bar.
   final VoidCallback? onOpenSettings;
 
+  /// Optional history action shown in the app bar.
+  final VoidCallback? onOpenHistory;
+
   const HomeScreen({
     super.key,
     required this.store,
     required this.onStart,
     this.onOpenSettings,
+    this.onOpenHistory,
   });
 
   void _openEditor(BuildContext context, {TimerConfig? existing}) {
@@ -52,6 +56,12 @@ class HomeScreen extends StatelessWidget {
               SliverAppBar.large(
                 title: const Text('RoundOne'),
                 actions: [
+                  if (onOpenHistory != null)
+                    IconButton(
+                      icon: const Icon(Icons.history),
+                      tooltip: 'History',
+                      onPressed: onOpenHistory,
+                    ),
                   if (onOpenSettings != null)
                     IconButton(
                       icon: const Icon(Icons.settings_outlined),

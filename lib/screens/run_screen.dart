@@ -129,11 +129,84 @@ class _RunScreenState extends State<RunScreen> {
     return index + 1 < intervals.length ? intervals[index + 1] : null;
   }
 
+  /// Full-screen celebration + stats shown when the workout finishes.
+  Widget _buildCompletion(BuildContext context) {
+    final totalRounds = widget.config.rounds * widget.config.sets;
+    final totalTime = _engine.schedule.totalSeconds;
+    return Scaffold(
+      backgroundColor: phaseColor(PhaseType.done),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.emoji_events,
+                    color: Colors.white, size: 96),
+                const SizedBox(height: 16),
+                const Text(
+                  'Workout complete!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.config.name,
+                  style: const TextStyle(color: Colors.white70, fontSize: 20),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _CompletionStat(
+                      value: formatClock(totalTime),
+                      label: 'Total time',
+                    ),
+                    const SizedBox(width: 40),
+                    _CompletionStat(
+                      value: '$totalRounds',
+                      label: 'Rounds',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+                FilledButton.icon(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: phaseColor(PhaseType.done),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 14),
+                  ),
+                  icon: const Icon(Icons.replay),
+                  label: const Text('Repeat', style: TextStyle(fontSize: 18)),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _engine,
       builder: (context, _) {
+        if (_engine.isFinished) return _buildCompletion(context);
         final pos = _engine.position;
         final finished = _engine.isFinished;
         final phase = finished ? PhaseType.done : pos.interval.phase;
@@ -377,6 +450,31 @@ class _RingPainter extends CustomPainter {
   @override
   bool shouldRepaint(_RingPainter old) =>
       old.progress != progress || old.stroke != stroke || old.dim != dim;
+}
+
+class _CompletionStat extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _CompletionStat({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+        Text(label, style: const TextStyle(color: Colors.white70)),
+      ],
+    );
+  }
 }
 
 class _RoundButton extends StatelessWidget {
