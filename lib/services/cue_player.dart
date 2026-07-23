@@ -71,16 +71,25 @@ class CuePlayer {
     _ready = true;
   }
 
+  /// Resolves a cue sound to the currently selected pack. 'classic' lives at
+  /// the root of assets/sounds; other packs live in a subfolder.
+  String _asset(String file) {
+    final pack = settings.soundPack;
+    return pack == 'classic' || pack.isEmpty
+        ? 'sounds/$file'
+        : 'sounds/$pack/$file';
+  }
+
   Future<void> handleCue(WorkoutCue cue, WorkoutPosition position) async {
     switch (cue) {
       case WorkoutCue.phaseChange:
-        await _play('sounds/phase.wav');
+        await _play(_asset('phase.wav'));
         _vibratePattern(_phasePattern(position.interval.phase));
       case WorkoutCue.countdown:
-        await _play('sounds/countdown.wav');
+        await _play(_asset('countdown.wav'));
         _vibratePattern(const [0, 80]);
       case WorkoutCue.finish:
-        await _play('sounds/finish.wav', keepDuckedMs: 1800);
+        await _play(_asset('finish.wav'), keepDuckedMs: 1800);
         // Celebratory triple buzz.
         _vibratePattern(const [0, 250, 120, 250, 120, 400]);
     }

@@ -88,7 +88,20 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          Card(
+            elevation: 0,
+            color: scheme.surfaceContainerHighest,
+            margin: const EdgeInsets.only(bottom: 12),
+            child: SwitchListTile(
+              secondary: Icon(
+                  _config.muted ? Icons.volume_off : Icons.volume_up),
+              title: const Text('Mute this timer'),
+              subtitle: const Text('No beeps or voice (vibration still works)'),
+              value: _config.muted,
+              onChanged: (v) => _set(_config.copyWith(muted: v)),
+            ),
+          ),
           _Section(
             title: 'Warm-up',
             icon: Icons.self_improvement,

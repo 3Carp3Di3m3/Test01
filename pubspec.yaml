@@ -67,6 +67,8 @@ flutter:
 
   assets:
     - assets/sounds/
+    - assets/sounds/soft/
+    - assets/sounds/digital/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

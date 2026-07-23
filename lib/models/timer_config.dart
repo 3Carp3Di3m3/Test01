@@ -33,6 +33,9 @@ class TimerConfig {
   /// Pinned to the top of the home list when true.
   final bool favorite;
 
+  /// Silences beeps and voice for this timer specifically (vibration stays).
+  final bool muted;
+
   const TimerConfig({
     required this.id,
     required this.name,
@@ -45,6 +48,7 @@ class TimerConfig {
     this.sets = 1,
     this.setRestSeconds = 60,
     this.favorite = false,
+    this.muted = false,
   });
 
   /// Total workout duration in seconds.
@@ -88,6 +92,7 @@ class TimerConfig {
     int? sets,
     int? setRestSeconds,
     bool? favorite,
+    bool? muted,
   }) {
     return TimerConfig(
       id: id ?? this.id,
@@ -101,6 +106,7 @@ class TimerConfig {
       sets: sets ?? this.sets,
       setRestSeconds: setRestSeconds ?? this.setRestSeconds,
       favorite: favorite ?? this.favorite,
+      muted: muted ?? this.muted,
     );
   }
 
@@ -116,6 +122,7 @@ class TimerConfig {
         'sets': sets,
         'setRestSeconds': setRestSeconds,
         'favorite': favorite,
+        'muted': muted,
       };
 
   factory TimerConfig.fromJson(Map<String, dynamic> json) => TimerConfig(
@@ -130,6 +137,7 @@ class TimerConfig {
         sets: json['sets'] as int? ?? 1,
         setRestSeconds: json['setRestSeconds'] as int? ?? 0,
         favorite: json['favorite'] as bool? ?? false,
+        muted: json['muted'] as bool? ?? false,
       );
 
   /// Built-in preset templates shown on the setup screen.

@@ -50,11 +50,12 @@ class FitTimerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Colors.deepOrange;
-    // Rebuild when the theme-mode setting changes.
+    // Rebuild when the theme-mode or accent-color setting changes.
     return ListenableBuilder(
       listenable: settings,
-      builder: (context, _) => MaterialApp(
+      builder: (context, _) {
+        final seed = Color(settings.accentColor);
+        return MaterialApp(
         title: 'RoundOne',
         theme: _theme(Brightness.light, seed),
         darkTheme: _theme(Brightness.dark, seed),
@@ -67,7 +68,8 @@ class FitTimerApp extends StatelessWidget {
           sessionStore: sessionStore,
           history: history,
         ),
-      ),
+        );
+      },
     );
   }
 
@@ -175,8 +177,11 @@ class _AppRootState extends State<AppRoot> {
     WorkoutForegroundService.requestPermissions();
 
     void onCue(WorkoutCue cue, WorkoutPosition pos) {
-      widget.cuePlayer.handleCue(cue, pos);
-      widget.voiceCoach.handleCue(cue, pos);
+      // A muted timer plays no beeps or voice (vibration still fires).
+      if (!config.muted) {
+        widget.cuePlayer.handleCue(cue, pos);
+        widget.voiceCoach.handleCue(cue, pos);
+      }
       if (cue == WorkoutCue.phaseChange) {
         final elapsed = pos.interval.endOffsetSeconds - pos.preciseRemaining;
         widget.sessionStore.save(config, elapsed, paused: false);
