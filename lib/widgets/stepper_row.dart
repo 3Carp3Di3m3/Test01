@@ -14,6 +14,12 @@ class StepperRow extends StatelessWidget {
   /// plain number.
   final String Function(int)? format;
 
+  /// Optional icon shown to the left of the label (e.g. a dumbbell for Work).
+  final IconData? leadingIcon;
+
+  /// Accent color for the leading icon.
+  final Color? iconColor;
+
   const StepperRow({
     super.key,
     required this.label,
@@ -23,6 +29,8 @@ class StepperRow extends StatelessWidget {
     this.min = 0,
     this.max = 5999,
     this.format,
+    this.leadingIcon,
+    this.iconColor,
   });
 
   void _change(int delta) {
@@ -37,6 +45,12 @@ class StepperRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
+          if (leadingIcon != null) ...[
+            Icon(leadingIcon,
+                size: 22,
+                color: iconColor ?? Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+          ],
           Expanded(
             child: Text(label, style: Theme.of(context).textTheme.bodyLarge),
           ),

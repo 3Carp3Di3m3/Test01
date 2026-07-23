@@ -96,6 +96,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
             children: [
               StepperRow(
                 label: 'Warm-up',
+                leadingIcon: Icons.self_improvement,
+                iconColor: const Color(0xFF00897B),
                 value: _config.warmupSeconds,
                 step: 15,
                 format: formatSeconds,
@@ -110,6 +112,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
             children: [
               StepperRow(
                 label: 'Get ready',
+                leadingIcon: Icons.hourglass_top,
+                iconColor: const Color(0xFFF9A825),
                 value: _config.prepareSeconds,
                 step: 5,
                 format: formatSeconds,
@@ -117,6 +121,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
               ),
               StepperRow(
                 label: 'Work',
+                leadingIcon: Icons.fitness_center,
+                iconColor: const Color(0xFF2E7D32),
                 value: _config.workSeconds,
                 step: 5,
                 min: 5,
@@ -125,6 +131,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
               ),
               StepperRow(
                 label: 'Rest',
+                leadingIcon: Icons.pause_circle_outline,
+                iconColor: const Color(0xFFC62828),
                 value: _config.restSeconds,
                 step: 5,
                 format: formatSeconds,
@@ -132,6 +140,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
               ),
               StepperRow(
                 label: 'Rounds',
+                leadingIcon: Icons.repeat,
+                iconColor: const Color(0xFF2E7D32),
                 value: _config.rounds,
                 min: 1,
                 max: 99,
@@ -146,6 +156,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
             children: [
               StepperRow(
                 label: 'Sets',
+                leadingIcon: Icons.layers_outlined,
+                iconColor: const Color(0xFF1565C0),
                 value: _config.sets,
                 min: 1,
                 max: 20,
@@ -153,6 +165,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
               ),
               StepperRow(
                 label: 'Rest between sets',
+                leadingIcon: Icons.hotel,
+                iconColor: const Color(0xFF1565C0),
                 value: _config.setRestSeconds,
                 step: 5,
                 format: formatSeconds,
@@ -167,6 +181,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
             children: [
               StepperRow(
                 label: 'Cool-down',
+                leadingIcon: Icons.ac_unit,
+                iconColor: const Color(0xFF5E35B1),
                 value: _config.cooldownSeconds,
                 step: 15,
                 format: formatSeconds,

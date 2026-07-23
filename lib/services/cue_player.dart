@@ -75,15 +75,28 @@ class CuePlayer {
     switch (cue) {
       case WorkoutCue.phaseChange:
         await _play('sounds/phase.wav');
-        _vibrate(300);
+        _vibratePattern(_phasePattern(position.interval.phase));
       case WorkoutCue.countdown:
         await _play('sounds/countdown.wav');
-        _vibrate(80);
+        _vibratePattern(const [0, 80]);
       case WorkoutCue.finish:
         await _play('sounds/finish.wav', keepDuckedMs: 1800);
-        _vibrate(700);
+        // Celebratory triple buzz.
+        _vibratePattern(const [0, 250, 120, 250, 120, 400]);
     }
   }
+
+  /// A distinct vibration pattern per phase so you can tell what's happening
+  /// without looking (pattern is [wait, buzz, wait, buzz, ...] in ms).
+  List<int> _phasePattern(PhaseType phase) => switch (phase) {
+        PhaseType.work => const [0, 400], // one strong buzz
+        PhaseType.rest => const [0, 120, 100, 120], // two short buzzes
+        PhaseType.warmup => const [0, 150], // gentle
+        PhaseType.cooldown => const [0, 150, 100, 150, 100, 150], // calming triple
+        PhaseType.setRest => const [0, 200, 120, 200], // two medium
+        PhaseType.prepare => const [0, 100], // light
+        PhaseType.done => const [0, 400],
+      };
 
   /// Duck the music, play the beep, then release focus [keepDuckedMs] later so
   /// the music volume comes back. The default window comfortably spans the gap
@@ -104,11 +117,12 @@ class CuePlayer {
     }
   }
 
-  Future<void> _vibrate(int ms) async {
+  Future<void> _vibratePattern(List<int> pattern) async {
     if (!settings.vibrationEnabled) return;
     try {
       if (await Vibration.hasVibrator()) {
-        Vibration.vibrate(duration: ms);
+        // Devices without amplitude control still honor the on/off pattern.
+        Vibration.vibrate(pattern: pattern);
       }
     } catch (_) {}
   }
