@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/workout_record.dart';
 import '../services/history_store.dart';
 import '../utils/format.dart';
+import '../widgets/bar_chart.dart';
 
 class HistoryScreen extends StatelessWidget {
   final HistoryStore history;
@@ -37,6 +38,16 @@ class HistoryScreen extends StatelessWidget {
     if (ok == true) await history.clear();
   }
 
+  static List<String> _weekdayLabels(DateTime now, int days) {
+    const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Mon..Sun
+    final out = <String>[];
+    for (var i = days - 1; i >= 0; i--) {
+      final d = now.subtract(Duration(days: i));
+      out.add(names[d.weekday - 1]);
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,9 +80,9 @@ class HistoryScreen extends StatelessWidget {
               Row(
                 children: [
                   _StatTile(
-                    label: 'Workouts',
-                    value: '${history.totalWorkouts}',
-                    icon: Icons.fitness_center,
+                    label: 'Streak',
+                    value: '${history.currentStreak(now)}d',
+                    icon: Icons.local_fire_department,
                   ),
                   const SizedBox(width: 12),
                   _StatTile(
@@ -87,6 +98,28 @@ class HistoryScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              if (history.totalWorkouts > 0) ...[
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Last 7 days',
+                            style: Theme.of(context).textTheme.labelLarge),
+                        const SizedBox(height: 12),
+                        MiniBarChart(
+                          values: history.lastDaysCounts(now, 7),
+                          labels: _weekdayLabels(now, 7),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               if (records.isEmpty)
                 Padding(

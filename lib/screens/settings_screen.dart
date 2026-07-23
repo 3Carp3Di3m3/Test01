@@ -48,6 +48,31 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (v) => settings.keepAwakeEnabled = v,
             ),
             const Divider(),
+            const _SectionHeader('Goals'),
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Weekly goal'),
+              subtitle: Text('${settings.weeklyGoal} workouts per week'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: settings.weeklyGoal > 1
+                        ? () => settings.weeklyGoal = settings.weeklyGoal - 1
+                        : null,
+                  ),
+                  Text('${settings.weeklyGoal}',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () =>
+                        settings.weeklyGoal = settings.weeklyGoal + 1,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
             const _SectionHeader('Appearance'),
             ListTile(
               leading: const Icon(Icons.palette_outlined),

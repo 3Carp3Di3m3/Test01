@@ -27,6 +27,46 @@ class HistoryStore extends ChangeNotifier {
     return _records.where((r) => r.completedAt.isAfter(cutoff)).length;
   }
 
+  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// Consecutive-day streak ending today (or yesterday, so a streak stays
+  /// alive until the end of the current day). 0 if no recent workouts.
+  int currentStreak(DateTime now) {
+    if (_records.isEmpty) return 0;
+    final days = _records.map((r) => _dateOnly(r.completedAt)).toSet();
+    var cursor = _dateOnly(now);
+    if (!days.contains(cursor)) {
+      cursor = cursor.subtract(const Duration(days: 1));
+      if (!days.contains(cursor)) return 0;
+    }
+    var streak = 0;
+    while (days.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
+
+  /// Workout counts for the last [days] days, oldest first, today last.
+  List<int> lastDaysCounts(DateTime now, int days) {
+    final counts = List.filled(days, 0);
+    final today = _dateOnly(now);
+    for (final r in _records) {
+      final diff = today.difference(_dateOnly(r.completedAt)).inDays;
+      if (diff >= 0 && diff < days) counts[days - 1 - diff]++;
+    }
+    return counts;
+  }
+
+  /// Test hook: replace records without touching storage.
+  @visibleForTesting
+  void seedForTest(List<WorkoutRecord> records) {
+    _records
+      ..clear()
+      ..addAll(records);
+    _loaded = true;
+  }
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);

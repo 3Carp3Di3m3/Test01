@@ -256,6 +256,8 @@ class _AppRootState extends State<AppRoot> {
       onStart: _startWorkout,
       onOpenSettings: _openSettings,
       onOpenHistory: _openHistory,
+      history: widget.history,
+      settings: widget.settings,
     );
   }
 }

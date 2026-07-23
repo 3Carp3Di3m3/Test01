@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/timer_config.dart';
+import '../services/app_settings.dart';
+import '../services/history_store.dart';
 import '../services/timer_store.dart';
 import '../utils/format.dart';
 import 'edit_timer_screen.dart';
@@ -19,12 +21,18 @@ class HomeScreen extends StatelessWidget {
   /// Optional history action shown in the app bar.
   final VoidCallback? onOpenHistory;
 
+  /// Optional history/settings for the weekly-goal card.
+  final HistoryStore? history;
+  final AppSettings? settings;
+
   const HomeScreen({
     super.key,
     required this.store,
     required this.onStart,
     this.onOpenSettings,
     this.onOpenHistory,
+    this.history,
+    this.settings,
   });
 
   void _openEditor(BuildContext context, {TimerConfig? existing}) {
@@ -75,6 +83,14 @@ class HomeScreen extends StatelessWidget {
                 sliver: SliverList.list(
                   children: [
                     _QuickStartCard(onTap: () => _quickStart(context)),
+                    if (history != null && settings != null) ...[
+                      const SizedBox(height: 12),
+                      _WeeklyGoalCard(
+                        history: history!,
+                        settings: settings!,
+                        onOpenHistory: onOpenHistory,
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -167,6 +183,97 @@ class _QuickStartCard extends StatelessWidget {
                   size: 40, color: scheme.primary),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeeklyGoalCard extends StatelessWidget {
+  final HistoryStore history;
+  final AppSettings settings;
+  final VoidCallback? onOpenHistory;
+
+  const _WeeklyGoalCard({
+    required this.history,
+    required this.settings,
+    required this.onOpenHistory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      color: scheme.surfaceContainerHighest,
+      child: InkWell(
+        onTap: onOpenHistory,
+        child: ListenableBuilder(
+          listenable: Listenable.merge([history, settings]),
+          builder: (context, _) {
+            final now = DateTime.now();
+            final done = history.workoutsThisWeek(now);
+            final goal = settings.weeklyGoal;
+            final streak = history.currentStreak(now);
+            final progress = goal == 0 ? 0.0 : (done / goal).clamp(0.0, 1.0);
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 500),
+                          builder: (context, v, _) => CircularProgressIndicator(
+                            value: v,
+                            strokeWidth: 6,
+                            backgroundColor: scheme.primary.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        Text('$done/$goal',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('This week',
+                            style: Theme.of(context).textTheme.titleMedium),
+                        Text(
+                          done >= goal && goal > 0
+                              ? 'Goal reached! 🎉'
+                              : '${goal - done} to go this week',
+                          style: TextStyle(color: scheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      const Icon(Icons.local_fire_department,
+                          color: Color(0xFFFF7043)),
+                      Text('$streak',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text('streak',
+                          style:
+                              TextStyle(color: scheme.outline, fontSize: 11)),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

@@ -8,18 +8,21 @@ class AppSettings extends ChangeNotifier {
   static const _keepAwakeKey = 'settings_keep_awake';
   static const _voiceKey = 'settings_voice';
   static const _themeKey = 'settings_theme_mode';
+  static const _weeklyGoalKey = 'settings_weekly_goal';
 
   bool _sound = true;
   bool _vibration = true;
   bool _keepAwake = true;
   bool _voice = true;
   ThemeMode _themeMode = ThemeMode.system;
+  int _weeklyGoal = 4;
 
   bool get soundEnabled => _sound;
   bool get vibrationEnabled => _vibration;
   bool get keepAwakeEnabled => _keepAwake;
   bool get voiceEnabled => _voice;
   ThemeMode get themeMode => _themeMode;
+  int get weeklyGoal => _weeklyGoal;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -28,6 +31,7 @@ class AppSettings extends ChangeNotifier {
     _keepAwake = prefs.getBool(_keepAwakeKey) ?? true;
     _voice = prefs.getBool(_voiceKey) ?? true;
     _themeMode = _themeFromString(prefs.getString(_themeKey));
+    _weeklyGoal = prefs.getInt(_weeklyGoalKey) ?? 4;
     notifyListeners();
   }
 
@@ -62,6 +66,13 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
     SharedPreferences.getInstance()
         .then((p) => p.setString(_themeKey, mode.name));
+  }
+
+  set weeklyGoal(int goal) {
+    _weeklyGoal = goal.clamp(1, 21);
+    notifyListeners();
+    SharedPreferences.getInstance()
+        .then((p) => p.setInt(_weeklyGoalKey, _weeklyGoal));
   }
 
   static ThemeMode _themeFromString(String? s) {
