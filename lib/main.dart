@@ -6,6 +6,7 @@ import 'models/workout_record.dart';
 import 'models/workout_schedule.dart';
 import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/run_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/app_settings.dart';
@@ -16,10 +17,12 @@ import 'services/running_session_store.dart';
 import 'services/timer_store.dart';
 import 'services/voice_coach.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   WorkoutForegroundService.init();
-  final settings = AppSettings()..load();
+  // Await settings so we know whether to show onboarding before first frame.
+  final settings = AppSettings();
+  await settings.load();
   runApp(FitTimerApp(
     store: TimerStore()..load(),
     settings: settings,
@@ -128,7 +131,25 @@ class _AppRootState extends State<AppRoot> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _offerResume());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _afterFirstFrame());
+  }
+
+  Future<void> _afterFirstFrame() async {
+    if (!widget.settings.onboarded) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => OnboardingScreen(
+            onDone: () {
+              widget.settings.onboarded = true;
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      );
+    }
+    if (mounted) await _offerResume();
   }
 
   Future<void> _offerResume() async {

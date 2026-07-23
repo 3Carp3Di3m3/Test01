@@ -11,6 +11,7 @@ class AppSettings extends ChangeNotifier {
   static const _weeklyGoalKey = 'settings_weekly_goal';
   static const _accentKey = 'settings_accent';
   static const _soundPackKey = 'settings_sound_pack';
+  static const _onboardedKey = 'settings_onboarded';
 
   /// Selectable accent colors (seed for the whole theme).
   static const accentChoices = <int>[
@@ -35,6 +36,7 @@ class AppSettings extends ChangeNotifier {
   int _weeklyGoal = 4;
   int _accent = 0xFFFF5722;
   String _soundPack = 'classic';
+  bool _onboarded = false;
 
   bool get soundEnabled => _sound;
   bool get vibrationEnabled => _vibration;
@@ -44,6 +46,7 @@ class AppSettings extends ChangeNotifier {
   int get weeklyGoal => _weeklyGoal;
   int get accentColor => _accent;
   String get soundPack => _soundPack;
+  bool get onboarded => _onboarded;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,7 +58,14 @@ class AppSettings extends ChangeNotifier {
     _weeklyGoal = prefs.getInt(_weeklyGoalKey) ?? 4;
     _accent = prefs.getInt(_accentKey) ?? 0xFFFF5722;
     _soundPack = prefs.getString(_soundPackKey) ?? 'classic';
+    _onboarded = prefs.getBool(_onboardedKey) ?? false;
     notifyListeners();
+  }
+
+  set onboarded(bool v) {
+    _onboarded = v;
+    notifyListeners();
+    SharedPreferences.getInstance().then((p) => p.setBool(_onboardedKey, v));
   }
 
   Future<void> _setBool(String key, bool value) async {

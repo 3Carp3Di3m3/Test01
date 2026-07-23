@@ -99,8 +99,9 @@ class HomeScreen extends StatelessWidget {
           final timers = store.timers;
           return CustomScrollView(
             slivers: [
-              SliverAppBar.large(
-                title: const Text('RoundOne'),
+              SliverAppBar(
+                expandedHeight: 150,
+                pinned: true,
                 actions: [
                   if (onOpenHistory != null)
                     IconButton(
@@ -115,6 +116,34 @@ class HomeScreen extends StatelessWidget {
                       onPressed: onOpenSettings,
                     ),
                 ],
+                flexibleSpace: FlexibleSpaceBar(
+                  titlePadding:
+                      const EdgeInsetsDirectional.only(start: 20, bottom: 16),
+                  title: const Text('RoundOne'),
+                  background: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          scheme.primary,
+                          scheme.primary.withValues(alpha: 0.55),
+                        ],
+                      ),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Icon(
+                          Icons.bolt,
+                          size: 120,
+                          color: Colors.white.withValues(alpha: 0.18),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
