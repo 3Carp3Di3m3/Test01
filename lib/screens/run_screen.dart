@@ -31,6 +31,17 @@ String phaseLabel(PhaseType phase) => switch (phase) {
       PhaseType.done => 'DONE',
     };
 
+/// Icon for each phase, mirroring the icons used in the timer editor.
+IconData phaseIcon(PhaseType phase) => switch (phase) {
+      PhaseType.warmup => Icons.self_improvement,
+      PhaseType.prepare => Icons.hourglass_top,
+      PhaseType.work => Icons.fitness_center,
+      PhaseType.rest => Icons.pause_circle_outline,
+      PhaseType.setRest => Icons.hotel,
+      PhaseType.cooldown => Icons.ac_unit,
+      PhaseType.done => Icons.emoji_events,
+    };
+
 /// The running timer. Tap anywhere to pause/resume; buttons for
 /// previous / next interval and stop. Works in portrait and landscape:
 /// a circular progress ring surrounds huge auto-scaling digits, the whole
@@ -229,7 +240,13 @@ class _RunScreenState extends State<RunScreen> {
                 interval.label!.isNotEmpty)
             ? interval.label!.toUpperCase()
             : phaseLabel(phase);
-        final stepIconKey = finished ? null : interval.iconKey;
+        // Always show an icon: the custom step's icon if set, otherwise a
+        // sensible icon for the current phase.
+        final headerIcon = finished
+            ? null
+            : (interval.iconKey != null
+                ? stepIcon(interval.iconKey!)
+                : phaseIcon(phase));
 
         final next = finished ? null : _nextInterval(pos.index);
         final nextName = next == null
@@ -242,6 +259,11 @@ class _RunScreenState extends State<RunScreen> {
             : next == null
                 ? 'Next: Finish'
                 : 'Next: $nextName · ${formatClock(next.durationSeconds)}';
+        final nextIcon = next == null
+            ? Icons.emoji_events
+            : (next.iconKey != null
+                ? stepIcon(next.iconKey!)
+                : phaseIcon(next.phase));
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -267,9 +289,8 @@ class _RunScreenState extends State<RunScreen> {
                         key: ValueKey(stepLabel),
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (stepIconKey != null) ...[
-                            Icon(stepIcon(stepIconKey),
-                                color: Colors.white, size: 30),
+                          if (headerIcon != null) ...[
+                            Icon(headerIcon, color: Colors.white, size: 32),
                             const SizedBox(width: 10),
                           ],
                           Flexible(
@@ -322,10 +343,20 @@ class _RunScreenState extends State<RunScreen> {
                     if (nextText.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          nextText,
-                          style: const TextStyle(
-                              color: Colors.white60, fontSize: 17),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(nextIcon,
+                                color: Colors.white60, size: 16),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                nextText,
+                                style: const TextStyle(
+                                    color: Colors.white60, fontSize: 17),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     Padding(
