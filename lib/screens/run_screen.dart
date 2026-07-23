@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../engine/workout_engine.dart';
+import '../models/step_icons.dart';
 import '../models/timer_config.dart';
 import '../models/workout_schedule.dart';
 import '../utils/format.dart';
@@ -223,12 +224,24 @@ class _RunScreenState extends State<RunScreen> {
                 '${widget.config.sets > 1 ? ' · Set ${interval.set}/${widget.config.sets}' : ''}'
             : '';
 
+        // For custom sequences show the step name (e.g. "PUSH-UPS") and icon.
+        final stepLabel = (!finished && interval.label != null &&
+                interval.label!.isNotEmpty)
+            ? interval.label!.toUpperCase()
+            : phaseLabel(phase);
+        final stepIconKey = finished ? null : interval.iconKey;
+
         final next = finished ? null : _nextInterval(pos.index);
+        final nextName = next == null
+            ? 'Finish'
+            : (next.label != null && next.label!.isNotEmpty
+                ? next.label!
+                : phaseLabel(next.phase));
         final nextText = finished
             ? ''
             : next == null
                 ? 'Next: Finish'
-                : 'Next: ${phaseLabel(next.phase)} · ${formatClock(next.durationSeconds)}';
+                : 'Next: $nextName · ${formatClock(next.durationSeconds)}';
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -250,15 +263,28 @@ class _RunScreenState extends State<RunScreen> {
                         opacity: anim,
                         child: ScaleTransition(scale: anim, child: child),
                       ),
-                      child: Text(
-                        phaseLabel(phase),
-                        key: ValueKey(phase),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 5,
-                        ),
+                      child: Row(
+                        key: ValueKey(stepLabel),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (stepIconKey != null) ...[
+                            Icon(stepIcon(stepIconKey),
+                                color: Colors.white, size: 30),
+                            const SizedBox(width: 10),
+                          ],
+                          Flexible(
+                            child: Text(
+                              stepLabel,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (roundText.isNotEmpty)

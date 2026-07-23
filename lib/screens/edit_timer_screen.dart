@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../models/step_icons.dart';
 import '../models/timer_config.dart';
+import '../models/timer_step.dart';
 import '../services/timer_store.dart';
 import '../utils/format.dart';
 import '../widgets/stepper_row.dart';
@@ -55,6 +57,103 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
 
   void _set(TimerConfig next) => setState(() => _config = next);
 
+  void _setMode(bool custom) {
+    setState(() {
+      if (custom && _config.steps.isEmpty) {
+        _config = _config.copyWith(steps: const [
+          TimerStep(
+              name: 'Exercise 1',
+              iconKey: 'dumbbell',
+              seconds: 30,
+              isRest: false),
+          TimerStep(name: 'Rest', iconKey: 'rest', seconds: 15, isRest: true),
+        ]);
+      } else if (!custom) {
+        _config = _config.copyWith(steps: const []);
+      }
+    });
+  }
+
+  void _moveStep(int i, int delta) {
+    final steps = [..._config.steps];
+    final j = i + delta;
+    if (j < 0 || j >= steps.length) return;
+    final tmp = steps[i];
+    steps[i] = steps[j];
+    steps[j] = tmp;
+    _set(_config.copyWith(steps: steps));
+  }
+
+  void _deleteStep(int i) {
+    final steps = [..._config.steps]..removeAt(i);
+    _set(_config.copyWith(steps: steps));
+  }
+
+  Future<void> _editStep(int? index) async {
+    final existing = index != null ? _config.steps[index] : null;
+    final result = await showDialog<TimerStep>(
+      context: context,
+      builder: (_) => _StepEditorDialog(step: existing),
+    );
+    if (result == null) return;
+    final steps = [..._config.steps];
+    if (index != null) {
+      steps[index] = result;
+    } else {
+      steps.add(result);
+    }
+    _set(_config.copyWith(steps: steps));
+  }
+
+  Widget _buildStepsSections(BuildContext context) {
+    return Column(
+      children: [
+        _Section(
+          title: 'Steps',
+          icon: Icons.list_alt,
+          color: const Color(0xFF2E7D32),
+          children: [
+            for (var i = 0; i < _config.steps.length; i++)
+              _StepTile(
+                step: _config.steps[i],
+                canMoveUp: i > 0,
+                canMoveDown: i < _config.steps.length - 1,
+                onTap: () => _editStep(i),
+                onUp: () => _moveStep(i, -1),
+                onDown: () => _moveStep(i, 1),
+                onDelete: () => _deleteStep(i),
+              ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => _editStep(null),
+                icon: const Icon(Icons.add),
+                label: const Text('Add step'),
+              ),
+            ),
+          ],
+        ),
+        _Section(
+          title: 'Repeat',
+          icon: Icons.repeat,
+          color: const Color(0xFF2E7D32),
+          children: [
+            StepperRow(
+              label: 'Rounds',
+              leadingIcon: Icons.repeat,
+              iconColor: const Color(0xFF2E7D32),
+              value: _config.rounds,
+              min: 1,
+              max: 99,
+              onChanged: (v) => _set(_config.copyWith(rounds: v)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -102,6 +201,23 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
               onChanged: (v) => _set(_config.copyWith(muted: v)),
             ),
           ),
+          Center(
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                    value: false,
+                    label: Text('Simple'),
+                    icon: Icon(Icons.tune)),
+                ButtonSegment(
+                    value: true,
+                    label: Text('Custom'),
+                    icon: Icon(Icons.list_alt)),
+              ],
+              selected: {_config.isCustom},
+              onSelectionChanged: (s) => _setMode(s.first),
+            ),
+          ),
+          const SizedBox(height: 12),
           _Section(
             title: 'Warm-up',
             icon: Icons.self_improvement,
@@ -118,7 +234,9 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
               ),
             ],
           ),
-          _Section(
+          if (_config.isCustom) _buildStepsSections(context),
+          if (!_config.isCustom)
+            _Section(
             title: 'Intervals',
             icon: Icons.repeat,
             color: const Color(0xFF2E7D32),
@@ -162,7 +280,8 @@ class _EditTimerScreenState extends State<EditTimerScreen> {
               ),
             ],
           ),
-          _Section(
+          if (!_config.isCustom)
+            _Section(
             title: 'Sets',
             icon: Icons.layers_outlined,
             color: const Color(0xFF1565C0),
@@ -287,6 +406,189 @@ class _Section extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// One row in the custom-steps editor.
+class _StepTile extends StatelessWidget {
+  final TimerStep step;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final VoidCallback onTap;
+  final VoidCallback onUp;
+  final VoidCallback onDown;
+  final VoidCallback onDelete;
+
+  const _StepTile({
+    required this.step,
+    required this.canMoveUp,
+    required this.canMoveDown,
+    required this.onTap,
+    required this.onUp,
+    required this.onDown,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = step.isRest ? const Color(0xFFC62828) : const Color(0xFF2E7D32);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: color.withValues(alpha: 0.15),
+        child: Icon(stepIcon(step.iconKey), color: color),
+      ),
+      title: Text(step.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+          '${formatSeconds(step.seconds)} · ${step.isRest ? 'Rest' : 'Work'}'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _CompactIcon(
+              icon: Icons.arrow_upward, onPressed: canMoveUp ? onUp : null),
+          _CompactIcon(
+              icon: Icons.arrow_downward,
+              onPressed: canMoveDown ? onDown : null),
+          _CompactIcon(icon: Icons.delete_outline, onPressed: onDelete),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactIcon extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+  const _CompactIcon({required this.icon, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+    );
+  }
+}
+
+/// Dialog to create or edit a single custom step.
+class _StepEditorDialog extends StatefulWidget {
+  final TimerStep? step;
+  const _StepEditorDialog({this.step});
+
+  @override
+  State<_StepEditorDialog> createState() => _StepEditorDialogState();
+}
+
+class _StepEditorDialogState extends State<_StepEditorDialog> {
+  late final TextEditingController _name;
+  late String _iconKey;
+  late int _seconds;
+  late bool _isRest;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.step;
+    _name = TextEditingController(text: s?.name ?? '');
+    _iconKey = s?.iconKey ?? 'dumbbell';
+    _seconds = s?.seconds ?? 30;
+    _isRest = s?.isRest ?? false;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final name = _name.text.trim();
+    Navigator.pop(
+      context,
+      TimerStep(
+        name: name.isEmpty ? (_isRest ? 'Rest' : 'Exercise') : name,
+        iconKey: _iconKey,
+        seconds: _seconds,
+        isRest: _isRest,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.step == null ? 'Add step' : 'Edit step'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _name,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: 'e.g. Push-ups',
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Icon'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final entry in kStepIcons.entries)
+                  GestureDetector(
+                    onTap: () => setState(() => _iconKey = entry.key),
+                    child: CircleAvatar(
+                      radius: 22,
+                      backgroundColor: _iconKey == entry.key
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
+                      child: Icon(
+                        entry.value,
+                        color: _iconKey == entry.key
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            StepperRow(
+              label: 'Duration',
+              value: _seconds,
+              step: 5,
+              min: 5,
+              format: formatSeconds,
+              onChanged: (v) => setState(() => _seconds = v),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('This is a rest step'),
+              value: _isRest,
+              onChanged: (v) => setState(() => _isRest = v),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _save, child: const Text('Save')),
+      ],
     );
   }
 }

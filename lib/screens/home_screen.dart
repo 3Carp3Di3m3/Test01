@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/timer_config.dart';
 import '../services/app_settings.dart';
 import '../services/history_store.dart';
+import '../services/timer_share.dart';
 import '../services/timer_store.dart';
 import '../utils/format.dart';
 import 'edit_timer_screen.dart';
@@ -48,6 +50,55 @@ class HomeScreen extends StatelessWidget {
     onStart(context, TimerConfig.preset('tabata', 'quick-start'));
   }
 
+  Future<void> _shareTimer(BuildContext context, TimerConfig config) async {
+    await Clipboard.setData(ClipboardData(text: TimerShare.encode(config)));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Timer code copied to clipboard')),
+    );
+  }
+
+  Future<void> _importTimer(BuildContext context) async {
+    final controller = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import timer'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Paste a timer code (ROUND1:…)',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+    if (code == null || !context.mounted) return;
+    final config = TimerShare.decode(code);
+    if (config == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That doesn’t look like a timer code')),
+      );
+      return;
+    }
+    await store.save(config);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Imported “${config.name}”')),
+    );
+  }
+
   /// Timers shown favorites-first; drag reorders, and favorites re-float to
   /// the top on the next build so they stay pinned.
   Widget _buildReorderableTimers(
@@ -74,6 +125,7 @@ class HomeScreen extends StatelessWidget {
           onDuplicate: () => store.duplicate(t),
           onDelete: () => store.delete(t.id),
           onToggleFavorite: () => store.toggleFavorite(t.id),
+          onShare: () => _shareTimer(context, t),
           dragHandle: ReorderableDragStartListener(
             index: index,
             child: const Padding(
@@ -103,6 +155,11 @@ class HomeScreen extends StatelessWidget {
                 expandedHeight: 150,
                 pinned: true,
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.download_outlined),
+                    tooltip: 'Import timer',
+                    onPressed: () => _importTimer(context),
+                  ),
                   if (onOpenHistory != null)
                     IconButton(
                       icon: const Icon(Icons.history),
@@ -349,6 +406,7 @@ class _TimerCard extends StatelessWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
   final VoidCallback onToggleFavorite;
+  final VoidCallback onShare;
   final Widget dragHandle;
 
   const _TimerCard({
@@ -359,6 +417,7 @@ class _TimerCard extends StatelessWidget {
     required this.onDuplicate,
     required this.onDelete,
     required this.onToggleFavorite,
+    required this.onShare,
     required this.dragHandle,
   });
 
@@ -449,6 +508,8 @@ class _TimerCard extends StatelessWidget {
                   switch (action) {
                     case 'favorite':
                       onToggleFavorite();
+                    case 'share':
+                      onShare();
                     case 'duplicate':
                       onDuplicate();
                     case 'delete':
@@ -465,6 +526,14 @@ class _TimerCard extends StatelessWidget {
                       title: Text(config.favorite
                           ? 'Remove favorite'
                           : 'Add to favorites'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'share',
+                    child: ListTile(
+                      leading: Icon(Icons.ios_share),
+                      title: Text('Share'),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),

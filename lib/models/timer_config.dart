@@ -1,3 +1,5 @@
+import 'timer_step.dart';
+
 /// Data model for a saved workout timer configuration.
 ///
 /// This is pure Dart (no Flutter imports) so it can be unit-tested
@@ -36,6 +38,10 @@ class TimerConfig {
   /// Silences beeps and voice for this timer specifically (vibration stays).
   final bool muted;
 
+  /// A custom interval sequence. When non-empty the timer runs these steps
+  /// (repeated [rounds] times) instead of the uniform work/rest model.
+  final List<TimerStep> steps;
+
   const TimerConfig({
     required this.id,
     required this.name,
@@ -49,7 +55,12 @@ class TimerConfig {
     this.setRestSeconds = 60,
     this.favorite = false,
     this.muted = false,
+    this.steps = const [],
   });
+
+  /// True when this timer is a custom step sequence rather than the uniform
+  /// work/rest/rounds/sets model.
+  bool get isCustom => steps.isNotEmpty;
 
   /// Total workout duration in seconds.
   ///
@@ -60,6 +71,10 @@ class TimerConfig {
   ///  * set-rest happens between sets, not after the last one;
   ///  * cool-down (if any) happens once, at the very end.
   int get totalSeconds {
+    if (isCustom) {
+      final oneRound = steps.fold(0, (sum, s) => sum + s.seconds);
+      return warmupSeconds + prepareSeconds + rounds * oneRound + cooldownSeconds;
+    }
     final oneSet = rounds * workSeconds + (rounds - 1).clamp(0, 1 << 30) * restSeconds;
     final betweenSets = (sets - 1).clamp(0, 1 << 30) * setRestSeconds;
     return warmupSeconds +
@@ -71,6 +86,10 @@ class TimerConfig {
 
   /// Short human-readable summary, e.g. "8 × 20s work / 10s rest · 2 sets".
   String get summary {
+    if (isCustom) {
+      final base = '${steps.length} steps';
+      return rounds > 1 ? '$base · $rounds rounds' : base;
+    }
     final base = '$rounds × ${_fmt(workSeconds)} work / ${_fmt(restSeconds)} rest';
     return sets > 1 ? '$base · $sets sets' : base;
   }
@@ -93,6 +112,7 @@ class TimerConfig {
     int? setRestSeconds,
     bool? favorite,
     bool? muted,
+    List<TimerStep>? steps,
   }) {
     return TimerConfig(
       id: id ?? this.id,
@@ -107,6 +127,7 @@ class TimerConfig {
       setRestSeconds: setRestSeconds ?? this.setRestSeconds,
       favorite: favorite ?? this.favorite,
       muted: muted ?? this.muted,
+      steps: steps ?? this.steps,
     );
   }
 
@@ -123,6 +144,7 @@ class TimerConfig {
         'setRestSeconds': setRestSeconds,
         'favorite': favorite,
         'muted': muted,
+        'steps': steps.map((s) => s.toJson()).toList(),
       };
 
   factory TimerConfig.fromJson(Map<String, dynamic> json) => TimerConfig(
@@ -138,6 +160,9 @@ class TimerConfig {
         setRestSeconds: json['setRestSeconds'] as int? ?? 0,
         favorite: json['favorite'] as bool? ?? false,
         muted: json['muted'] as bool? ?? false,
+        steps: (json['steps'] as List<dynamic>? ?? [])
+            .map((e) => TimerStep.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   /// Built-in preset templates shown on the setup screen.

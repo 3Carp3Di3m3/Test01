@@ -20,12 +20,19 @@ class WorkoutInterval {
   /// Seconds from workout start at which this interval begins.
   final int startOffsetSeconds;
 
+  /// Optional custom-step name (e.g. "Push-ups") and icon key, for custom
+  /// sequences. Null on uniform work/rest timers.
+  final String? label;
+  final String? iconKey;
+
   const WorkoutInterval({
     required this.phase,
     required this.round,
     required this.set,
     required this.durationSeconds,
     required this.startOffsetSeconds,
+    this.label,
+    this.iconKey,
   });
 
   int get endOffsetSeconds => startOffsetSeconds + durationSeconds;
@@ -68,7 +75,8 @@ class WorkoutSchedule {
     final list = <WorkoutInterval>[];
     var offset = 0;
 
-    void add(PhaseType phase, int round, int set, int duration) {
+    void add(PhaseType phase, int round, int set, int duration,
+        {String? label, String? iconKey}) {
       if (duration <= 0) return; // zero-length intervals are skipped entirely
       list.add(WorkoutInterval(
         phase: phase,
@@ -76,23 +84,42 @@ class WorkoutSchedule {
         set: set,
         durationSeconds: duration,
         startOffsetSeconds: offset,
+        label: label,
+        iconKey: iconKey,
       ));
       offset += duration;
     }
 
     add(PhaseType.warmup, 0, 1, config.warmupSeconds);
     add(PhaseType.prepare, 0, 1, config.prepareSeconds);
-    for (var set = 1; set <= config.sets; set++) {
+
+    if (config.isCustom) {
+      // Custom sequence: run the step list, repeated `rounds` times.
       for (var round = 1; round <= config.rounds; round++) {
-        add(PhaseType.work, round, set, config.workSeconds);
-        // No rest after the final round of a set.
-        if (round < config.rounds) {
-          add(PhaseType.rest, round, set, config.restSeconds);
+        for (final step in config.steps) {
+          add(
+            step.isRest ? PhaseType.rest : PhaseType.work,
+            round,
+            1,
+            step.seconds,
+            label: step.name,
+            iconKey: step.iconKey,
+          );
         }
       }
-      // Set-rest between sets, not after the last one.
-      if (set < config.sets) {
-        add(PhaseType.setRest, 0, set, config.setRestSeconds);
+    } else {
+      for (var set = 1; set <= config.sets; set++) {
+        for (var round = 1; round <= config.rounds; round++) {
+          add(PhaseType.work, round, set, config.workSeconds);
+          // No rest after the final round of a set.
+          if (round < config.rounds) {
+            add(PhaseType.rest, round, set, config.restSeconds);
+          }
+        }
+        // Set-rest between sets, not after the last one.
+        if (set < config.sets) {
+          add(PhaseType.setRest, 0, set, config.setRestSeconds);
+        }
       }
     }
     add(PhaseType.cooldown, 0, config.sets, config.cooldownSeconds);

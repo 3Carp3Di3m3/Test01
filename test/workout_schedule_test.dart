@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fittimer/models/timer_config.dart';
+import 'package:fittimer/models/timer_step.dart';
 import 'package:fittimer/models/workout_schedule.dart';
+import 'package:fittimer/services/timer_share.dart';
 
 void main() {
   // Tabata: 10s prepare + 8 × 20s work with 10s rest between rounds
@@ -135,6 +137,63 @@ void main() {
       expect(s.intervals.any((i) => i.phase == PhaseType.warmup), isFalse);
       expect(s.intervals.any((i) => i.phase == PhaseType.cooldown), isFalse);
       expect(s.positionAt(0).interval.phase, PhaseType.prepare);
+    });
+  });
+
+  group('custom step sequences', () {
+    const custom = TimerConfig(
+      id: 'c',
+      name: 'Circuit',
+      prepareSeconds: 0,
+      rounds: 2,
+      steps: [
+        TimerStep(name: 'Push-ups', seconds: 30, isRest: false),
+        TimerStep(name: 'Break', seconds: 10, isRest: true),
+        TimerStep(name: 'Squats', seconds: 20, isRest: false),
+      ],
+    );
+
+    test('isCustom flips on non-empty steps', () {
+      expect(custom.isCustom, isTrue);
+      expect(custom.copyWith(steps: const []).isCustom, isFalse);
+    });
+
+    test('total = rounds × sum(steps)', () {
+      expect(custom.totalSeconds, 2 * (30 + 10 + 20));
+    });
+
+    test('schedule expands steps with labels and phases', () {
+      final s = WorkoutSchedule.fromConfig(custom);
+      expect(s.intervals.length, 6); // 3 steps × 2 rounds
+      expect(s.intervals.first.label, 'Push-ups');
+      expect(s.intervals.first.phase, PhaseType.work);
+      expect(s.intervals[1].phase, PhaseType.rest); // "Break" is a rest step
+      expect(s.positionAt(30).interval.label, 'Break');
+      expect(s.positionAt(60).interval.label, 'Push-ups'); // round 2
+    });
+  });
+
+  group('timer share codec', () {
+    test('encode → decode round-trips fields with a fresh id', () {
+      const c = TimerConfig(
+        id: 'orig',
+        name: 'Shared',
+        workSeconds: 45,
+        rounds: 6,
+        favorite: true,
+      );
+      final code = TimerShare.encode(c);
+      final back = TimerShare.decode(code)!;
+      expect(back.name, 'Shared');
+      expect(back.workSeconds, 45);
+      expect(back.rounds, 6);
+      expect(back.favorite, isTrue);
+      expect(back.id, isNot('orig')); // new id on import
+    });
+
+    test('garbage returns null', () {
+      expect(TimerShare.decode('not a code'), isNull);
+      expect(TimerShare.decode('ROUND1:@@@'), isNull);
     });
   });
 }

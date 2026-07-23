@@ -54,6 +54,10 @@ class VoiceCoach {
   }
 
   String _phraseForPhase(WorkoutInterval interval) {
+    // Custom sequences announce the step name (e.g. "Push-ups").
+    if (interval.label != null && interval.label!.isNotEmpty) {
+      return interval.label!;
+    }
     switch (interval.phase) {
       case PhaseType.warmup:
         return 'Warm up';

@@ -14,14 +14,17 @@ guides you through the workout with colors, sounds and vibration.
 lib/
   main.dart                     # App entry: theme, wiring of all services
   models/
-    timer_config.dart           # A saved timer (warm-up/work/rest/cool-down) + presets
+    timer_config.dart           # A saved timer (uniform or custom step sequence) + presets
+    timer_step.dart             # One step in a custom interval sequence
+    step_icons.dart             # Named icon registry for steps
     workout_schedule.dart       # Expands a timer into intervals; "what phase at second X"
     workout_record.dart         # One completed workout, for history
   engine/
     workout_engine.dart         # Wall-clock driven engine: pause/skip/cues
   services/
-    timer_store.dart            # Saved timers (shared_preferences, JSON)
-    history_store.dart          # Completed-workout log + stats
+    timer_store.dart            # Saved timers (shared_preferences, JSON) + reorder/favorite
+    timer_share.dart            # Encode/decode a timer to a shareable code
+    history_store.dart          # Completed-workout log + stats (streak, per-day)
     app_settings.dart           # Sound / voice / vibration / keep-awake / theme
     cue_player.dart             # Beeps + vibration, ducks music via audio_session
     voice_coach.dart            # Spoken cues via flutter_tts (ducks music too)
