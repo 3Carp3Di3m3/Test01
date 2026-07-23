@@ -9,6 +9,12 @@ class TimerConfig {
   /// "Get ready" time before the first work interval, in seconds.
   final int prepareSeconds;
 
+  /// Optional gentle warm-up before everything else, in seconds. 0 = none.
+  final int warmupSeconds;
+
+  /// Optional cool-down after the last round, in seconds. 0 = none.
+  final int cooldownSeconds;
+
   /// Length of one work interval, in seconds.
   final int workSeconds;
 
@@ -28,6 +34,8 @@ class TimerConfig {
     required this.id,
     required this.name,
     this.prepareSeconds = 10,
+    this.warmupSeconds = 0,
+    this.cooldownSeconds = 0,
     this.workSeconds = 20,
     this.restSeconds = 10,
     this.rounds = 8,
@@ -38,13 +46,19 @@ class TimerConfig {
   /// Total workout duration in seconds.
   ///
   /// Rules:
-  ///  * prepare happens once at the very start;
+  ///  * warm-up (if any) happens once, first of all;
+  ///  * prepare happens once, right after the warm-up;
   ///  * within a set there is no rest after the last round;
-  ///  * set-rest happens between sets, not after the last one.
+  ///  * set-rest happens between sets, not after the last one;
+  ///  * cool-down (if any) happens once, at the very end.
   int get totalSeconds {
     final oneSet = rounds * workSeconds + (rounds - 1).clamp(0, 1 << 30) * restSeconds;
     final betweenSets = (sets - 1).clamp(0, 1 << 30) * setRestSeconds;
-    return prepareSeconds + sets * oneSet + betweenSets;
+    return warmupSeconds +
+        prepareSeconds +
+        sets * oneSet +
+        betweenSets +
+        cooldownSeconds;
   }
 
   /// Short human-readable summary, e.g. "8 × 20s work / 10s rest · 2 sets".
@@ -62,6 +76,8 @@ class TimerConfig {
     String? id,
     String? name,
     int? prepareSeconds,
+    int? warmupSeconds,
+    int? cooldownSeconds,
     int? workSeconds,
     int? restSeconds,
     int? rounds,
@@ -72,6 +88,8 @@ class TimerConfig {
       id: id ?? this.id,
       name: name ?? this.name,
       prepareSeconds: prepareSeconds ?? this.prepareSeconds,
+      warmupSeconds: warmupSeconds ?? this.warmupSeconds,
+      cooldownSeconds: cooldownSeconds ?? this.cooldownSeconds,
       workSeconds: workSeconds ?? this.workSeconds,
       restSeconds: restSeconds ?? this.restSeconds,
       rounds: rounds ?? this.rounds,
@@ -84,6 +102,8 @@ class TimerConfig {
         'id': id,
         'name': name,
         'prepareSeconds': prepareSeconds,
+        'warmupSeconds': warmupSeconds,
+        'cooldownSeconds': cooldownSeconds,
         'workSeconds': workSeconds,
         'restSeconds': restSeconds,
         'rounds': rounds,
@@ -95,6 +115,8 @@ class TimerConfig {
         id: json['id'] as String,
         name: json['name'] as String,
         prepareSeconds: json['prepareSeconds'] as int? ?? 0,
+        warmupSeconds: json['warmupSeconds'] as int? ?? 0,
+        cooldownSeconds: json['cooldownSeconds'] as int? ?? 0,
         workSeconds: json['workSeconds'] as int? ?? 20,
         restSeconds: json['restSeconds'] as int? ?? 0,
         rounds: json['rounds'] as int? ?? 1,

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -9,24 +11,30 @@ import '../utils/format.dart';
 /// Full-screen background color per phase. High-saturation shades so the
 /// phase is obvious from across the room.
 Color phaseColor(PhaseType phase) => switch (phase) {
+      PhaseType.warmup => const Color(0xFF00897B), // teal
       PhaseType.prepare => const Color(0xFFF9A825), // yellow
       PhaseType.work => const Color(0xFF2E7D32), // green
       PhaseType.rest => const Color(0xFFC62828), // red
       PhaseType.setRest => const Color(0xFF1565C0), // blue
+      PhaseType.cooldown => const Color(0xFF5E35B1), // deep purple
       PhaseType.done => const Color(0xFF6A1B9A), // purple
     };
 
 String phaseLabel(PhaseType phase) => switch (phase) {
+      PhaseType.warmup => 'WARM UP',
       PhaseType.prepare => 'GET READY',
       PhaseType.work => 'WORK',
       PhaseType.rest => 'REST',
       PhaseType.setRest => 'SET REST',
+      PhaseType.cooldown => 'COOL DOWN',
       PhaseType.done => 'DONE',
     };
 
 /// The running timer. Tap anywhere to pause/resume; buttons for
 /// previous / next interval and stop. Works in portrait and landscape:
-/// the digits scale with FittedBox, so they always fill the space.
+/// a circular progress ring surrounds huge auto-scaling digits, the whole
+/// background eases between phase colors, and a "next up" preview shows
+/// what's coming.
 class RunScreen extends StatefulWidget {
   final TimerConfig config;
 
@@ -115,6 +123,12 @@ class _RunScreenState extends State<RunScreen> {
     }
   }
 
+  /// The phase that comes after the current one, for the "next up" preview.
+  WorkoutInterval? _nextInterval(int index) {
+    final intervals = _engine.schedule.intervals;
+    return index + 1 < intervals.length ? intervals[index + 1] : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -129,110 +143,128 @@ class _RunScreenState extends State<RunScreen> {
             ? 1.0
             : 1.0 - pos.preciseRemaining / interval.durationSeconds;
 
-        final roundText = interval.phase == PhaseType.work ||
-                interval.phase == PhaseType.rest
+        final showsRoundInfo = interval.phase == PhaseType.work ||
+            interval.phase == PhaseType.rest;
+        final roundText = showsRoundInfo
             ? 'Round ${interval.round}/${widget.config.rounds}'
                 '${widget.config.sets > 1 ? ' · Set ${interval.set}/${widget.config.sets}' : ''}'
-            : (widget.config.sets > 1 && interval.phase == PhaseType.setRest
-                ? 'Set ${interval.set} done'
-                : '');
+            : '';
+
+        final next = finished ? null : _nextInterval(pos.index);
+        final nextText = finished
+            ? ''
+            : next == null
+                ? 'Next: Finish'
+                : 'Next: ${phaseLabel(next.phase)} · ${formatClock(next.durationSeconds)}';
 
         return Scaffold(
-          backgroundColor: color,
-          body: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _togglePause,
-            child: SafeArea(
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  Text(
-                    phaseLabel(phase),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 4,
+          backgroundColor: Colors.black,
+          body: AnimatedContainer(
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeInOut,
+            color: color,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _togglePause,
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    // Phase name, animated on change.
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: ScaleTransition(scale: anim, child: child),
+                      ),
+                      child: Text(
+                        phaseLabel(phase),
+                        key: ValueKey(phase),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 5,
+                        ),
+                      ),
                     ),
-                  ),
-                  if (roundText.isNotEmpty)
-                    Text(
-                      roundText,
-                      style: const TextStyle(color: Colors.white70, fontSize: 22),
-                    ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: FittedBox(
-                        fit: BoxFit.contain,
+                    if (roundText.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          finished
+                          roundText,
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 22),
+                        ),
+                      ),
+                    // Ring + digits fill the middle.
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: _RingWithDigits(
+                          progress: progress.clamp(0.0, 1.0),
+                          text: finished
                               ? 'DONE'
                               : formatClock(pos.displayRemaining),
+                          paused: !finished && !_engine.isRunning,
+                        ),
+                      ),
+                    ),
+                    // Total time left / paused hint.
+                    if (!finished)
+                      Text(
+                        _engine.isRunning
+                            ? 'Total left: ${formatClock(_engine.totalRemaining.ceil())}'
+                            : 'PAUSED — tap to resume',
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 20),
+                      ),
+                    // Next-up preview.
+                    if (nextText.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          nextText,
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 400,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
+                              color: Colors.white60, fontSize: 17),
                         ),
                       ),
-                    ),
-                  ),
-                  if (!finished) ...[
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: progress.clamp(0.0, 1.0),
-                          minHeight: 10,
-                          backgroundColor: Colors.white24,
-                          color: Colors.white,
-                        ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _RoundButton(
+                            icon: Icons.skip_previous,
+                            onPressed: finished ? null : _engine.skipPrevious,
+                          ),
+                          _RoundButton(
+                            icon: finished
+                                ? Icons.check
+                                : (_engine.isRunning
+                                    ? Icons.pause
+                                    : Icons.play_arrow),
+                            large: true,
+                            onPressed: finished
+                                ? () => Navigator.pop(context)
+                                : _togglePause,
+                          ),
+                          _RoundButton(
+                            icon: Icons.skip_next,
+                            onPressed: finished ? null : _engine.skipNext,
+                          ),
+                          _RoundButton(
+                            icon: Icons.stop,
+                            onPressed: finished
+                                ? () => Navigator.pop(context)
+                                : _confirmStop,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _engine.isRunning
-                          ? 'Total left: ${formatClock(_engine.totalRemaining.ceil())}'
-                          : 'PAUSED — tap to resume',
-                      style: const TextStyle(color: Colors.white70, fontSize: 20),
                     ),
                   ],
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _RoundButton(
-                          icon: Icons.skip_previous,
-                          onPressed: finished ? null : _engine.skipPrevious,
-                        ),
-                        _RoundButton(
-                          icon: finished
-                              ? Icons.check
-                              : (_engine.isRunning
-                                  ? Icons.pause
-                                  : Icons.play_arrow),
-                          large: true,
-                          onPressed:
-                              finished ? () => Navigator.pop(context) : _togglePause,
-                        ),
-                        _RoundButton(
-                          icon: Icons.skip_next,
-                          onPressed: finished ? null : _engine.skipNext,
-                        ),
-                        _RoundButton(
-                          icon: Icons.stop,
-                          onPressed: finished
-                              ? () => Navigator.pop(context)
-                              : _confirmStop,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -240,6 +272,111 @@ class _RunScreenState extends State<RunScreen> {
       },
     );
   }
+}
+
+/// A circular progress ring with big auto-scaling text centered inside.
+class _RingWithDigits extends StatelessWidget {
+  final double progress;
+  final String text;
+  final bool paused;
+
+  const _RingWithDigits({
+    required this.progress,
+    required this.text,
+    required this.paused,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        final stroke = (side * 0.045).clamp(8.0, 26.0);
+        return Center(
+          child: SizedBox(
+            width: side,
+            height: side,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Animate the arc smoothly between ticks.
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: progress, end: progress),
+                  duration: const Duration(milliseconds: 200),
+                  builder: (context, value, _) => CustomPaint(
+                    size: Size.square(side),
+                    painter: _RingPainter(
+                      progress: value,
+                      stroke: stroke,
+                      dim: paused,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(stroke + side * 0.10),
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        color: paused ? Colors.white70 : Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 400,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  final double progress;
+  final double stroke;
+  final bool dim;
+
+  _RingPainter({
+    required this.progress,
+    required this.stroke,
+    required this.dim,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = (size.width - stroke) / 2;
+
+    final track = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.22);
+    canvas.drawCircle(center, radius, track);
+
+    final arc = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: dim ? 0.55 : 1.0);
+    // Start at top (-90°), sweep clockwise by progress.
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      2 * math.pi * progress.clamp(0.0, 1.0),
+      false,
+      arc,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) =>
+      old.progress != progress || old.stroke != stroke || old.dim != dim;
 }
 
 class _RoundButton extends StatelessWidget {
@@ -254,11 +391,12 @@ class _RoundButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       icon: Icon(icon),
-      iconSize: large ? 56 : 40,
+      iconSize: large ? 52 : 38,
       style: IconButton.styleFrom(
         foregroundColor: Colors.white,
         backgroundColor: Colors.white24,
         disabledForegroundColor: Colors.white38,
+        padding: EdgeInsets.all(large ? 18 : 12),
       ),
     );
   }

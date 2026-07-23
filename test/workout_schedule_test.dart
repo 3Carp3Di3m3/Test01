@@ -104,4 +104,37 @@ void main() {
       expect(s.positionAt(-5).interval.phase, PhaseType.prepare);
     });
   });
+
+  group('warm-up and cool-down', () {
+    final c = tabata.copyWith(warmupSeconds: 30, cooldownSeconds: 45);
+
+    test('add to total duration', () {
+      expect(c.totalSeconds, 30 + 240 + 45);
+      expect(WorkoutSchedule.fromConfig(c).totalSeconds, 315);
+    });
+
+    test('warm-up is first, then get-ready', () {
+      final s = WorkoutSchedule.fromConfig(c);
+      expect(s.positionAt(0).interval.phase, PhaseType.warmup);
+      expect(s.positionAt(29).interval.phase, PhaseType.warmup);
+      // Warm-up 0..30, then prepare 30..40.
+      expect(s.positionAt(30).interval.phase, PhaseType.prepare);
+      expect(s.positionAt(40).interval.phase, PhaseType.work);
+    });
+
+    test('cool-down is the final phase before done', () {
+      final s = WorkoutSchedule.fromConfig(c);
+      // Whole thing runs 0..315; cool-down is the last 45s (270..315).
+      expect(s.positionAt(300).interval.phase, PhaseType.cooldown);
+      expect(s.positionAt(314.5).interval.phase, PhaseType.cooldown);
+      expect(s.positionAt(315).isFinished, isTrue);
+    });
+
+    test('zero warm-up/cool-down are skipped (back-compat)', () {
+      final s = WorkoutSchedule.fromConfig(tabata);
+      expect(s.intervals.any((i) => i.phase == PhaseType.warmup), isFalse);
+      expect(s.intervals.any((i) => i.phase == PhaseType.cooldown), isFalse);
+      expect(s.positionAt(0).interval.phase, PhaseType.prepare);
+    });
+  });
 }

@@ -43,19 +43,38 @@ class FitTimerApp extends StatelessWidget {
     const seed = Colors.deepOrange;
     return MaterialApp(
       title: 'RoundOne',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: seed),
-      ),
-      darkTheme: ThemeData(
-        colorScheme:
-            ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark),
-      ),
+      theme: _theme(Brightness.light, seed),
+      darkTheme: _theme(Brightness.dark, seed),
       themeMode: ThemeMode.system,
       home: AppRoot(
         store: store,
         settings: settings,
         cuePlayer: cuePlayer,
         sessionStore: sessionStore,
+      ),
+    );
+  }
+
+  static ThemeData _theme(Brightness brightness, Color seed) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: seed,
+      brightness: brightness,
+    );
+    return ThemeData(
+      colorScheme: scheme,
+      cardTheme: CardThemeData(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

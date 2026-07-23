@@ -2,7 +2,7 @@ import 'timer_config.dart';
 
 /// The kind of interval currently running. Each phase has its own
 /// full-screen color on the running timer screen.
-enum PhaseType { prepare, work, rest, setRest, done }
+enum PhaseType { warmup, prepare, work, rest, setRest, cooldown, done }
 
 /// One concrete interval in the workout, with its absolute position
 /// (in seconds from the start of the workout) pre-computed.
@@ -80,6 +80,7 @@ class WorkoutSchedule {
       offset += duration;
     }
 
+    add(PhaseType.warmup, 0, 1, config.warmupSeconds);
     add(PhaseType.prepare, 0, 1, config.prepareSeconds);
     for (var set = 1; set <= config.sets; set++) {
       for (var round = 1; round <= config.rounds; round++) {
@@ -94,6 +95,7 @@ class WorkoutSchedule {
         add(PhaseType.setRest, 0, set, config.setRestSeconds);
       }
     }
+    add(PhaseType.cooldown, 0, config.sets, config.cooldownSeconds);
     return WorkoutSchedule._(config, List.unmodifiable(list));
   }
 
