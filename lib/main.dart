@@ -42,7 +42,7 @@ class FitTimerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     const seed = Colors.deepOrange;
     return MaterialApp(
-      title: 'FitTimer',
+      title: 'RoundOne',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: seed),
       ),
