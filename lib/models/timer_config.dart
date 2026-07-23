@@ -30,6 +30,9 @@ class TimerConfig {
   /// Rest between sets, in seconds.
   final int setRestSeconds;
 
+  /// Pinned to the top of the home list when true.
+  final bool favorite;
+
   const TimerConfig({
     required this.id,
     required this.name,
@@ -41,6 +44,7 @@ class TimerConfig {
     this.rounds = 8,
     this.sets = 1,
     this.setRestSeconds = 60,
+    this.favorite = false,
   });
 
   /// Total workout duration in seconds.
@@ -83,6 +87,7 @@ class TimerConfig {
     int? rounds,
     int? sets,
     int? setRestSeconds,
+    bool? favorite,
   }) {
     return TimerConfig(
       id: id ?? this.id,
@@ -95,6 +100,7 @@ class TimerConfig {
       rounds: rounds ?? this.rounds,
       sets: sets ?? this.sets,
       setRestSeconds: setRestSeconds ?? this.setRestSeconds,
+      favorite: favorite ?? this.favorite,
     );
   }
 
@@ -109,6 +115,7 @@ class TimerConfig {
         'rounds': rounds,
         'sets': sets,
         'setRestSeconds': setRestSeconds,
+        'favorite': favorite,
       };
 
   factory TimerConfig.fromJson(Map<String, dynamic> json) => TimerConfig(
@@ -122,6 +129,7 @@ class TimerConfig {
         rounds: json['rounds'] as int? ?? 1,
         sets: json['sets'] as int? ?? 1,
         setRestSeconds: json['setRestSeconds'] as int? ?? 0,
+        favorite: json['favorite'] as bool? ?? false,
       );
 
   /// Built-in preset templates shown on the setup screen.

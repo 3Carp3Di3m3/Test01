@@ -56,6 +56,23 @@ class TimerStore extends ChangeNotifier {
     await _persist();
   }
 
+  Future<void> toggleFavorite(String id) async {
+    final i = _timers.indexWhere((t) => t.id == id);
+    if (i < 0) return;
+    _timers[i] = _timers[i].copyWith(favorite: !_timers[i].favorite);
+    notifyListeners();
+    await _persist();
+  }
+
+  /// Replace the stored order with [ordered] (e.g. after a drag-reorder).
+  Future<void> setOrder(List<TimerConfig> ordered) async {
+    _timers
+      ..clear()
+      ..addAll(ordered);
+    notifyListeners();
+    await _persist();
+  }
+
   Future<TimerConfig> duplicate(TimerConfig config) async {
     final copy = config.copyWith(id: newId(), name: '${config.name} (copy)');
     _timers.add(copy);

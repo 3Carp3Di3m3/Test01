@@ -48,6 +48,44 @@ class HomeScreen extends StatelessWidget {
     onStart(context, TimerConfig.preset('tabata', 'quick-start'));
   }
 
+  /// Timers shown favorites-first; drag reorders, and favorites re-float to
+  /// the top on the next build so they stay pinned.
+  Widget _buildReorderableTimers(
+      BuildContext context, List<TimerConfig> timers) {
+    final display = [
+      ...timers.where((t) => t.favorite),
+      ...timers.where((t) => !t.favorite),
+    ];
+    return SliverReorderableList(
+      itemCount: display.length,
+      onReorder: (oldIndex, newIndex) {
+        final list = [...display];
+        if (newIndex > oldIndex) newIndex -= 1;
+        list.insert(newIndex, list.removeAt(oldIndex));
+        store.setOrder(list);
+      },
+      itemBuilder: (context, index) {
+        final t = display[index];
+        return _TimerCard(
+          key: ValueKey(t.id),
+          config: t,
+          onStart: () => onStart(context, t),
+          onEdit: () => _openEditor(context, existing: t),
+          onDuplicate: () => store.duplicate(t),
+          onDelete: () => store.delete(t.id),
+          onToggleFavorite: () => store.toggleFavorite(t.id),
+          dragHandle: ReorderableDragStartListener(
+            index: index,
+            child: const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(Icons.drag_handle),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -79,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 sliver: SliverList.list(
                   children: [
                     _QuickStartCard(onTap: () => _quickStart(context)),
@@ -107,20 +145,15 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    if (timers.isEmpty)
-                      _EmptyState(scheme: scheme)
-                    else
-                      for (final t in timers)
-                        _TimerCard(
-                          config: t,
-                          onStart: () => onStart(context, t),
-                          onEdit: () => _openEditor(context, existing: t),
-                          onDuplicate: () => store.duplicate(t),
-                          onDelete: () => store.delete(t.id),
-                        ),
+                    if (timers.isEmpty) _EmptyState(scheme: scheme),
                   ],
                 ),
               ),
+              if (timers.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  sliver: _buildReorderableTimers(context, timers),
+                ),
             ],
           );
         },
@@ -286,13 +319,18 @@ class _TimerCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
+  final VoidCallback onToggleFavorite;
+  final Widget dragHandle;
 
   const _TimerCard({
+    super.key,
     required this.config,
     required this.onStart,
     required this.onEdit,
     required this.onDuplicate,
     required this.onDelete,
+    required this.onToggleFavorite,
+    required this.dragHandle,
   });
 
   @override
@@ -330,11 +368,23 @@ class _TimerCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      config.name,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        if (config.favorite)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 4),
+                            child: Icon(Icons.star,
+                                size: 16, color: Color(0xFFFFC107)),
+                          ),
+                        Flexible(
+                          child: Text(
+                            config.name,
+                            style: Theme.of(context).textTheme.titleMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -368,14 +418,28 @@ class _TimerCard extends StatelessWidget {
               PopupMenuButton<String>(
                 onSelected: (action) {
                   switch (action) {
+                    case 'favorite':
+                      onToggleFavorite();
                     case 'duplicate':
                       onDuplicate();
                     case 'delete':
                       onDelete();
                   }
                 },
-                itemBuilder: (_) => const [
+                itemBuilder: (_) => [
                   PopupMenuItem(
+                    value: 'favorite',
+                    child: ListTile(
+                      leading: Icon(config.favorite
+                          ? Icons.star
+                          : Icons.star_outline),
+                      title: Text(config.favorite
+                          ? 'Remove favorite'
+                          : 'Add to favorites'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuItem(
                     value: 'duplicate',
                     child: ListTile(
                       leading: Icon(Icons.copy),
@@ -383,7 +447,7 @@ class _TimerCard extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
                       leading: Icon(Icons.delete_outline),
@@ -393,6 +457,7 @@ class _TimerCard extends StatelessWidget {
                   ),
                 ],
               ),
+              dragHandle,
             ],
           ),
         ),
