@@ -1,0 +1,25 @@
+{
+	"schemaVersion": 1,
+	"id": "modsforminecraft",
+	"version": "${version}",
+	"name": "Mods for Minecraft",
+	"description": "A starter Fabric mod project.",
+	"authors": [
+		"Danijel Tkalec"
+	],
+	"contact": {},
+	"license": "MIT",
+	"icon": "assets/modsforminecraft/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.tkalec.modsforminecraft.ModsForMinecraft"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
