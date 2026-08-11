@@ -1,7 +1,12 @@
-# Second Brain — Identity B
+# Second Brain — Private Life
 
-A second Claude Code "brain" with its own identity, its own credentials, and a
-hard-enforced boundary against Identity A (3dsvet.eu and its accounts).
+> **New here? Read [`HANDOFF.md`](HANDOFF.md) first.** It has the kickoff prompt
+> and the three first steps. [`PLAN.md`](PLAN.md) has the reasoning behind the
+> design.
+
+A second Claude Code "brain" for Danijel's **private life** — its own identity,
+its own credentials, and an enforced boundary against Identity A (3dsvet.eu and
+its business accounts).
 
 **This is not a web app and not an artifact.** It's a Claude Code project
 directory. Claude Code *is* the runtime; Telegram is the user interface. There
@@ -100,12 +105,17 @@ from the parent.
 
 | Server | Status | Tools |
 |---|---|---|
-| `telegram` | Ready | `telegram_send_message`, `telegram_get_messages` |
-| `notify` | Ready | `notify_push` |
-| `twilio` | Ready | `twilio_send_sms`, `twilio_make_call` |
-| `mailbox_b` | Ready | `mailbox_search`, `mailbox_read`, `mailbox_send` |
-| `notion_b` | Ready | official `@notionhq/notion-mcp-server` via npx |
-| `wordpress_b` | **Not wired** | see below |
+| `telegram` | **Active** | `telegram_send_message`, `telegram_get_messages` |
+| `notify` | **Active** | `notify_push` |
+| `mailbox_b` | Parked | `mailbox_search`, `mailbox_read`, `mailbox_send` |
+| `twilio` | Parked | `twilio_send_sms`, `twilio_make_call` |
+| `notion_b` | Parked | official `@notionhq/notion-mcp-server` via npx |
+| `wordpress_b` | Not wired | see below |
+
+Parked servers are written and compile-checked but held in `mcp.parked.json`
+until their credentials exist. To activate one, copy its block into the
+`mcpServers` object in `.mcp.json` and restart Claude Code. Keeping
+unconfigured servers out of the tool list avoids noise during setup.
 
 ### Adding WordPress B
 

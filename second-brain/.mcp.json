@@ -1,4 +1,5 @@
 {
+  "_comment": "Active servers only. mailbox_b, twilio and notion_b are parked in mcp.parked.json — move them back here once their credentials exist in .env.",
   "mcpServers": {
     "telegram": {
       "command": "python3",
@@ -15,32 +16,6 @@
         "NTFY_SERVER": "${NTFY_SERVER}",
         "NTFY_TOPIC": "${NTFY_TOPIC}",
         "NTFY_TOKEN": "${NTFY_TOKEN}"
-      }
-    },
-    "twilio": {
-      "command": "python3",
-      "args": ["${CLAUDE_PROJECT_DIR}/servers/twilio_mcp.py"],
-      "env": {
-        "TWILIO_ACCOUNT_SID": "${TWILIO_ACCOUNT_SID}",
-        "TWILIO_AUTH_TOKEN": "${TWILIO_AUTH_TOKEN}",
-        "TWILIO_FROM_NUMBER": "${TWILIO_FROM_NUMBER}"
-      }
-    },
-    "mailbox_b": {
-      "command": "python3",
-      "args": ["${CLAUDE_PROJECT_DIR}/servers/mailbox_mcp.py"],
-      "env": {
-        "MAILBOX_IMAP_HOST": "${MAILBOX_IMAP_HOST}",
-        "MAILBOX_SMTP_HOST": "${MAILBOX_SMTP_HOST}",
-        "MAILBOX_ADDRESS": "${MAILBOX_ADDRESS}",
-        "MAILBOX_APP_PASSWORD": "${MAILBOX_APP_PASSWORD}"
-      }
-    },
-    "notion_b": {
-      "command": "npx",
-      "args": ["-y", "@notionhq/notion-mcp-server"],
-      "env": {
-        "NOTION_TOKEN": "${NOTION_B_TOKEN}"
       }
     }
   }
