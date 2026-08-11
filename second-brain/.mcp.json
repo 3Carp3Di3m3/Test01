@@ -1,0 +1,47 @@
+{
+  "mcpServers": {
+    "telegram": {
+      "command": "python3",
+      "args": ["${CLAUDE_PROJECT_DIR}/servers/telegram_mcp.py"],
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "${TELEGRAM_BOT_TOKEN}",
+        "TELEGRAM_CHAT_ID": "${TELEGRAM_CHAT_ID}"
+      }
+    },
+    "notify": {
+      "command": "python3",
+      "args": ["${CLAUDE_PROJECT_DIR}/servers/notify_mcp.py"],
+      "env": {
+        "NTFY_SERVER": "${NTFY_SERVER}",
+        "NTFY_TOPIC": "${NTFY_TOPIC}",
+        "NTFY_TOKEN": "${NTFY_TOKEN}"
+      }
+    },
+    "twilio": {
+      "command": "python3",
+      "args": ["${CLAUDE_PROJECT_DIR}/servers/twilio_mcp.py"],
+      "env": {
+        "TWILIO_ACCOUNT_SID": "${TWILIO_ACCOUNT_SID}",
+        "TWILIO_AUTH_TOKEN": "${TWILIO_AUTH_TOKEN}",
+        "TWILIO_FROM_NUMBER": "${TWILIO_FROM_NUMBER}"
+      }
+    },
+    "mailbox_b": {
+      "command": "python3",
+      "args": ["${CLAUDE_PROJECT_DIR}/servers/mailbox_mcp.py"],
+      "env": {
+        "MAILBOX_IMAP_HOST": "${MAILBOX_IMAP_HOST}",
+        "MAILBOX_SMTP_HOST": "${MAILBOX_SMTP_HOST}",
+        "MAILBOX_ADDRESS": "${MAILBOX_ADDRESS}",
+        "MAILBOX_APP_PASSWORD": "${MAILBOX_APP_PASSWORD}"
+      }
+    },
+    "notion_b": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "${NOTION_B_TOKEN}"
+      }
+    }
+  }
+}

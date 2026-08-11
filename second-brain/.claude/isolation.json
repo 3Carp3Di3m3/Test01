@@ -1,0 +1,25 @@
+{
+  "blocked_tools": [
+    "mcp__Gmail__*",
+    "mcp__Google_Drive__*",
+    "mcp__Google_Calendar__*",
+    "mcp__Notion__*",
+    "mcp__3DSVET_WordPress__*",
+    "mcp__Semrush__*",
+    "mcp__Interactive_Brokers__*",
+    "mcp__Supadata__*",
+    "mcp__Whimsical_Remote_MCP__*"
+  ],
+  "blocked_paths": [
+    "**/.env",
+    "**/.env.*",
+    "**/id_rsa*",
+    "**/credentials.json",
+    "**/token.json"
+  ],
+  "confine_to_brain_dir": true,
+  "allowed_system_prefixes": [
+    "/usr", "/bin", "/sbin", "/lib", "/lib64", "/opt", "/etc",
+    "/proc", "/dev/null", "/var/tmp", "/tmp"
+  ]
+}
