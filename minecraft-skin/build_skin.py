@@ -13,7 +13,9 @@ Output: redstone_trapper.png   (upload this to minecraft.net)
         preview_front.png      (scaled-up front view, not for upload)
 """
 
-from PIL import Image
+import skin_layout as sk
+from skin_layout import HEAD, BODY, ARM_R, ARM_L, LEG_R, LEG_L
+from skin_layout import HEAD_O as HOOD
 
 # ---------------------------------------------------------------- palette
 
@@ -31,27 +33,6 @@ PAL = {
     'W': (0x9B, 0xA3, 0xAE),  # tripwire string
     'M': (0x6E, 0x76, 0x81),  # metal / buckle
 }
-
-# ------------------------------------------------------- texture regions
-# (x, y) of the top-left corner of each face in the 64x64 texture.
-
-HEAD = {'top': (8, 0), 'bottom': (16, 0), 'right': (0, 8),
-        'front': (8, 8), 'left': (16, 8), 'back': (24, 8)}
-HOOD = {'top': (40, 0), 'bottom': (48, 0), 'right': (32, 8),
-        'front': (40, 8), 'left': (48, 8), 'back': (56, 8)}
-
-BODY = {'top': (20, 16), 'bottom': (28, 16), 'right': (16, 20),
-        'front': (20, 20), 'left': (28, 20), 'back': (32, 20)}
-
-ARM_R = {'top': (44, 16), 'bottom': (48, 16), 'right': (40, 20),
-         'front': (44, 20), 'left': (48, 20), 'back': (52, 20)}
-ARM_L = {'top': (36, 48), 'bottom': (40, 48), 'right': (32, 52),
-         'front': (36, 52), 'left': (40, 52), 'back': (44, 52)}
-
-LEG_R = {'top': (4, 16), 'bottom': (8, 16), 'right': (0, 20),
-         'front': (4, 20), 'left': (8, 20), 'back': (12, 20)}
-LEG_L = {'top': (20, 48), 'bottom': (24, 48), 'right': (16, 52),
-         'front': (20, 52), 'left': (24, 52), 'back': (28, 52)}
 
 # ------------------------------------------------------------------ head
 # Visor band on rows 2-4, bare jaw below. No muzzle, no ears, no bowtie.
@@ -199,87 +180,38 @@ LEG_BOTTOM = ['bbbb'] * 4
 
 # ----------------------------------------------------------------- build
 
-def blit(img, origin, grid):
-    ox, oy = origin
-    for dy, row in enumerate(grid):
-        for dx, ch in enumerate(row):
-            if ch == '.':
-                continue
-            img.putpixel((ox + dx, oy + dy), PAL[ch] + (255,))
-
-
 def build():
-    img = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
+    img = sk.new_skin()
 
-    for reg, grid in (
-        (HEAD['front'], HEAD_FRONT), (HEAD['right'], HEAD_SIDE),
-        (HEAD['left'], HEAD_SIDE), (HEAD['back'], HEAD_BACK),
-        (HEAD['top'], HEAD_TOP), (HEAD['bottom'], HEAD_BOTTOM),
+    sk.draw(img, HEAD, PAL, front=HEAD_FRONT, back=HEAD_BACK,
+            right=HEAD_SIDE, left=HEAD_SIDE,
+            top=HEAD_TOP, bottom=HEAD_BOTTOM)
 
-        (HOOD['front'], HOOD_FRONT), (HOOD['right'], HOOD_SIDE),
-        (HOOD['left'], HOOD_SIDE), (HOOD['back'], HOOD_BACK),
-        (HOOD['top'], HOOD_TOP), (HOOD['bottom'], HOOD_BOTTOM),
+    sk.draw(img, HOOD, PAL, front=HOOD_FRONT, back=HOOD_BACK,
+            right=HOOD_SIDE, left=HOOD_SIDE,
+            top=HOOD_TOP, bottom=HOOD_BOTTOM)
 
-        (BODY['front'], BODY_FRONT), (BODY['back'], BODY_BACK),
-        (BODY['right'], BODY_SIDE), (BODY['left'], BODY_SIDE),
-        (BODY['top'], BODY_TOP), (BODY['bottom'], BODY_BOTTOM),
-    ):
-        blit(img, reg, grid)
+    sk.draw(img, BODY, PAL, front=BODY_FRONT, back=BODY_BACK,
+            right=BODY_SIDE, left=BODY_SIDE,
+            top=BODY_TOP, bottom=BODY_BOTTOM)
 
-    # arms: the seam goes on the outer face of each arm
+    # arms: the powered-dust seam goes on the outer face of each arm
     for arm, outer in ((ARM_R, 'right'), (ARM_L, 'left')):
-        for face in ('front', 'back', 'right', 'left'):
-            blit(img, arm[face], ARM_OUTER if face == outer else ARM_PLAIN)
-        blit(img, arm['top'], ARM_TOP)
-        blit(img, arm['bottom'], ARM_BOTTOM)
+        faces = {f: (ARM_OUTER if f == outer else ARM_PLAIN)
+                 for f in ('front', 'back', 'right', 'left')}
+        sk.draw(img, arm, PAL, top=ARM_TOP, bottom=ARM_BOTTOM, **faces)
 
     for leg in (LEG_R, LEG_L):
-        for face in ('front', 'back', 'right', 'left'):
-            blit(img, leg[face], LEG_SIDE)
-        blit(img, leg['top'], LEG_TOP)
-        blit(img, leg['bottom'], LEG_BOTTOM)
+        sk.draw(img, leg, PAL, front=LEG_SIDE, back=LEG_SIDE,
+                right=LEG_SIDE, left=LEG_SIDE,
+                top=LEG_TOP, bottom=LEG_BOTTOM)
 
     return img
-
-
-def preview(img, face='front', scale=20):
-    """Flat view so you can eyeball it without loading the game."""
-    out = Image.new('RGBA', (16, 32), (0, 0, 0, 0))
-
-    def paste(region, w, h, at):
-        out.paste(img.crop((region[0], region[1],
-                            region[0] + w, region[1] + h)), at)
-
-    def over(region, w, h, at):
-        out.alpha_composite(img.crop((region[0], region[1],
-                                      region[0] + w, region[1] + h)), at)
-
-    # from behind, the model's left/right swap places on screen
-    near, far = (ARM_R, ARM_L) if face == 'front' else (ARM_L, ARM_R)
-    lnear, lfar = (LEG_R, LEG_L) if face == 'front' else (LEG_L, LEG_R)
-
-    paste(HEAD[face], 8, 8, (4, 0))
-    over(HOOD[face], 8, 8, (4, 0))
-    paste(BODY[face], 8, 12, (4, 8))
-    paste(near[face], 4, 12, (0, 8))
-    paste(far[face], 4, 12, (12, 8))
-    paste(lnear[face], 4, 12, (4, 20))
-    paste(lfar[face], 4, 12, (8, 20))
-
-    bg = Image.new('RGBA', out.size, (0x22, 0x24, 0x28, 255))
-    bg.alpha_composite(out)
-    return bg.resize((16 * scale, 32 * scale), Image.NEAREST)
 
 
 if __name__ == '__main__':
     skin = build()
     skin.save('redstone_trapper.png')
-
-    front, back = preview(skin, 'front'), preview(skin, 'back')
-    sheet = Image.new('RGBA', (front.width * 2 + 40, front.height),
-                      (0x22, 0x24, 0x28, 255))
-    sheet.paste(front, (0, 0))
-    sheet.paste(back, (front.width + 40, 0))
-    sheet.save('preview.png')
-
-    print('wrote redstone_trapper.png (%dx%d) and preview.png' % skin.size)
+    sk.sheet(skin, 'redstone_trapper_preview.png')
+    print('wrote redstone_trapper.png (%dx%d) and '
+          'redstone_trapper_preview.png' % skin.size)
